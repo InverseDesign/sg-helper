@@ -72,17 +72,6 @@ def _shift_press(handle, key):
     win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 1 << 20)
     win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 1 << 20)
 
-def _alt_pressv2(handle,key):
-    win32api.PostMessage(handle, win32con.WM_SYSKEYDOWN, win32con.VK_MENU,  1<<29)
-    win32api.PostMessage(handle, win32con.WM_SYSKEYDOWN, const.keyboard_map[key],  1<<29)
-    win32api.PostMessage(handle, win32con.WM_SYSKEYUP, const.keyboard_map[key],  1<<29)
-    win32api.PostMessage(handle, win32con.WM_SYSKEYUP, win32con.VK_MENU,  1<<29)
-
-def _alt_pressv3(handle,key):
-    win32api.keybd_event(0x12,0,0,0)
-    win32api.keybd_event(const.keyboard_map[key],0,0,0)
-    win32api.keybd_event(0x12,0,win32con.KEYEVENTF_KEYUP,0)
-    win32api.keybd_event(const.keyboard_map[key],0,win32con.KEYEVENTF_KEYUP,0)
 
 def find_window(window_name):
     windows = []
