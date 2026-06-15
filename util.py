@@ -1,12 +1,9 @@
 import win32gui, win32con, win32api
-from PIL import ImageGrab
 from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem, QGraphicsScene
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QPixmap
 
 import const
-import time
-global app
 
 
 class Window:
@@ -35,21 +32,53 @@ class Position:
         self.x = xx
         self.y = yy
 
-def press(handle,key):
+def press(handle, key_str):
+    """根据按键字符串前缀自动判断组合键类型。
+    格式 "ALT+A"   -> alt_press(handle, 'a')
+    格式 "CTRL+A"  -> ctrl_press(handle, 'a')
+    格式 "SHIFT+A" -> shift_press(handle, 'a')
+    格式 "A"       -> press(handle, 'a')
+    """
+    key_str = key_str.strip()
+    parts = key_str.split('+', 1)
+    if len(parts) == 2:
+        modifier, key = parts[0].upper(), parts[1].lower()
+        match modifier:
+            case 'ALT':
+                _alt_press(handle, key)
+            case 'CTRL':
+                _ctrl_press(handle, key)
+            case 'SHIFT':
+                _shift_press(handle, key)
+            case _:
+                _press(handle, key_str.lower())
+    else:
+        _press(handle, key_str.lower())
+
+
+def _press(handle, key):
     win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 0)
     win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 0)
 
-def alt_press(handle,key):
-    win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 1<<29)
-    win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 1<<29)
+def _alt_press(handle, key):
+    win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 1 << 29)
+    win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 1 << 29)
 
-def alt_pressv2(handle,key):
+def _ctrl_press(handle, key):
+    win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 1 << 29 | 1 << 28)
+    win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 1 << 29 | 1 << 28)
+
+def _shift_press(handle, key):
+    win32api.SendMessage(handle, win32con.WM_KEYDOWN, const.keyboard_map[key], 1 << 20)
+    win32api.SendMessage(handle, win32con.WM_KEYUP, const.keyboard_map[key], 1 << 20)
+
+def _alt_pressv2(handle,key):
     win32api.PostMessage(handle, win32con.WM_SYSKEYDOWN, win32con.VK_MENU,  1<<29)
     win32api.PostMessage(handle, win32con.WM_SYSKEYDOWN, const.keyboard_map[key],  1<<29)
     win32api.PostMessage(handle, win32con.WM_SYSKEYUP, const.keyboard_map[key],  1<<29)
     win32api.PostMessage(handle, win32con.WM_SYSKEYUP, win32con.VK_MENU,  1<<29)
 
-def alt_pressv3(handle,key):
+def _alt_pressv3(handle,key):
     win32api.keybd_event(0x12,0,0,0)
     win32api.keybd_event(const.keyboard_map[key],0,0,0)
     win32api.keybd_event(0x12,0,win32con.KEYEVENTF_KEYUP,0)
@@ -86,10 +115,16 @@ def int2rgb(num):
 
 
 def show_pix_on_graph_view(widget, pixmap):
-    item = QGraphicsPixmapItem(pixmap)
-    scene = QGraphicsScene()
-    scene.addItem(item)
-    widget.setScene(scene)
+    # 复用 scene，避免每次 setScene 触发 QGraphicsView 整块重绘导致光标闪烁
+    scene = widget.scene()
+    if scene is None:
+        scene = QGraphicsScene()
+        item = QGraphicsPixmapItem(pixmap)
+        scene.addItem(item)
+        widget.setScene(scene)
+        widget._pixmap_item = item
+    else:
+        widget._pixmap_item.setPixmap(pixmap)
 
 
 if __name__ == '__main__':
