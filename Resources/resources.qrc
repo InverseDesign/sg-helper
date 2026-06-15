@@ -1,0 +1,5 @@
+<RCC>
+  <qresource lang="style" prefix="style">
+    <file>groupbox.qss</file>
+  </qresource>
+</RCC>
